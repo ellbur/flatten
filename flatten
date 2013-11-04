@@ -1,0 +1,41 @@
+#!/usr/bin/python
+
+from __future__ import print_function
+import os, sys
+import argparse
+from quickfiles import *
+from uuid import uuid4
+
+parser = argparse.ArgumentParser(
+    description='''Moves all of <dir>/* to <dir>/.. and then deletes <dir>.''',
+    formatter_class = argparse.RawTextHelpFormatter
+)
+parser.add_argument('dir', metavar='DIR', type=str,
+    help='Directory to flatten')
+
+args = parser.parse_args()
+
+try:
+    dir = p(args.dir)
+    parent = dir/'..'
+    for child in dir//'*':
+        hit = (parent/child.name)
+        if hit.exists:
+            print('%s would overwrite %s' % (child, hit))
+            sys.exit(1)
+
+    temp_thing = parent/uuid4()
+    os.rename(str(dir), str(temp_thing))
+
+    try:
+        for child in temp_thing//'*':
+            shutil.move(str(child), str(parent/child.name))
+    except:
+        os.rename(str(temp_thing), str(dir))
+        raise
+    
+    os.rmdir(str(temp_thing))
+except OSError as e:
+    print(e)
+    sys.exit(2)
+
